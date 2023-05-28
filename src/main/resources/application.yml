@@ -1,0 +1,65 @@
+server:
+  port: 8082
+spring: 
+  data:
+    mongodb: 
+      database: orderdb
+  application:
+    name: ORDER_SERVICE
+  config:  
+    import: configserver:http://localhost:9296
+    
+resilience4j:
+  circuitbreaker:
+    instances: 
+     order-api: 
+            registerHealthIndicator: true
+            slidingWindowSize: 10
+            minimumNumberOfCalls: 10
+            permittedNumberOfCallsInHalfOpenState: 3
+            waitDurationInOpenState: 5s
+            failureRateThreshold: 50
+            eventConsumerBufferSize: 10
+  retry:
+    configs: 
+      default:
+            maxAttempts: 3
+            waitDuration: 100
+    instances: 
+      order-api: 
+          baseConfig: default
+logging:
+  file: 
+   name: /orderapplication.log
+  pattern:
+    console: "%d %-5level %logger : %msg%n"
+    file: "%d %-5level [%thread] %logger : %msg%n"
+  level:
+    org.springframework.web: ERROR
+   
+---
+spring:
+  kafka:
+    template:
+      default-topic: product-topic
+    consumer:
+      bootstrap-servers:
+      - localhost:9093
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties: 
+        acks: all
+        retries: 10
+        retry.backoff.ms: 1000
+        spring: 
+            json:
+              trusted:
+                packages: com.aet.*
+      group-id: group-id
+      
+
+
+
+
+
+  
